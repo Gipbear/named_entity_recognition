@@ -5,13 +5,25 @@ import torch.nn.functional as F
 
 
 def word2features(sent, i):
-    """抽取单个字的特征"""
+    """抽取单个字的五个特征:
+    前一个词，当前词，后一个词
+    前一个词+当前词，当前词+后一个词
+
+    Parameters
+    ----------
+    sent : list
+        句子列表
+    i : int
+        句子中第 i 个位置
+
+    Returns
+    -------
+    dict
+        抽取的句子特征, 包含单个词和两个词
+    """
     word = sent[i]
     prev_word = "<s>" if i == 0 else sent[i-1]
     next_word = "</s>" if i == (len(sent)-1) else sent[i+1]
-    # 使用的特征：
-    # 前一个词，当前词，后一个词，
-    # 前一个词+当前词， 当前词+后一个词
     features = {
         'w': word,
         'w-1': prev_word,
@@ -31,6 +43,20 @@ def sent2features(sent):
 # ******** LSTM模型 工具函数*************
 
 def tensorized(batch, maps):
+    """将一个批量的列表转化为 tensor, 以放入网络中训练
+
+    Parameters
+    ----------
+    batch : list of list
+        一个 bacth 的语句或标签列表
+    maps : dict
+        字符串 --> 数字
+
+    Returns
+    -------
+    (tensor, list)
+        返回tensor 张量化后的结果, 以及每个样本的长度列表
+    """
     PAD = maps.get('<pad>')
     UNK = maps.get('<unk>')
 
@@ -48,6 +74,20 @@ def tensorized(batch, maps):
 
 
 def sort_by_lengths(word_lists, tag_lists):
+    """按照单词列表的长度降序排列
+
+    Parameters
+    ----------
+    word_lists : list of list
+        语句列表
+    tag_lists : list of list
+        标签列表
+
+    Returns
+    -------
+    (list list list)
+        排序后的列表以及对应的索引列表
+    """
     pairs = list(zip(word_lists, tag_lists))
     indices = sorted(range(len(pairs)),
                      key=lambda k: len(pairs[k][0]),
@@ -62,10 +102,23 @@ def sort_by_lengths(word_lists, tag_lists):
 
 def cal_loss(logits, targets, tag2id):
     """计算损失
-    参数:
         logits: [B, L, out_size]
         targets: [B, L]
         lengths: [B]
+
+    Parameters
+    ----------
+    logits : tensor [B, L, out_size]
+        训练结果
+    targets : tensor [B, L]
+        真实标签
+    tag2id : dict
+        标签 --> id
+
+    Returns
+    -------
+    int
+        损失函数值
     """
     PAD = tag2id.get('<pad>')
     assert PAD is not None
@@ -75,7 +128,7 @@ def cal_loss(logits, targets, tag2id):
     out_size = logits.size(2)
     logits = logits.masked_select(
         mask.unsqueeze(2).expand(-1, -1, out_size)
-    ).contiguous().view(-1, out_size)
+    ).contiguous().view(-1, out_size)  # 将输出转化为与目标相同尺寸
 
     assert logits.size(0) == targets.size(0)
     loss = F.cross_entropy(logits, targets)

@@ -4,7 +4,7 @@ from utils import flatten_lists
 
 
 class Metrics(object):
-    """用于评价模型，计算每个标签的精确率，召回率，F1分数"""
+    """用于评价模型, 计算每个标签的精确率, 召回率, F1分数"""
 
     def __init__(self, golden_tags, predict_tags, remove_O=False):
 
@@ -31,6 +31,13 @@ class Metrics(object):
         self.f1_scores = self.cal_f1()
 
     def cal_precision(self):
+        """计算每个标签的精确率 TP / (TP + FP)
+
+        Returns
+        -------
+        dict
+            每个标签对应的预测精度
+        """
 
         precision_scores = {}
         for tag in self.tagset:
@@ -40,6 +47,13 @@ class Metrics(object):
         return precision_scores
 
     def cal_recall(self):
+        """计算召回率 TP / (TP + FN)
+
+        Returns
+        -------
+        dict
+            每个标签对应的预测召回率
+        """
 
         recall_scores = {}
         for tag in self.tagset:
@@ -48,6 +62,13 @@ class Metrics(object):
         return recall_scores
 
     def cal_f1(self):
+        """计算每个标签对应的 f1
+
+        Returns
+        -------
+        dict
+            每个标签对应的 f1
+        """
         f1_scores = {}
         for tag in self.tagset:
             p, r = self.precision_scores[tag], self.recall_scores[tag]
@@ -57,17 +78,17 @@ class Metrics(object):
     def report_scores(self):
         """将结果用表格的形式打印出来，像这个样子：
 
-                      precision    recall  f1-score   support
-              B-LOC      0.775     0.757     0.766      1084
-              I-LOC      0.601     0.631     0.616       325
-             B-MISC      0.698     0.499     0.582       339
-             I-MISC      0.644     0.567     0.603       557
-              B-ORG      0.795     0.801     0.798      1400
-              I-ORG      0.831     0.773     0.801      1104
-              B-PER      0.812     0.876     0.843       735
-              I-PER      0.873     0.931     0.901       634
+                    precision    recall  f1-score   support
+            B-LOC       0.775     0.757     0.766      1084
+            I-LOC       0.601     0.631     0.616       325
+            B-MISC      0.698     0.499     0.582       339
+            I-MISC      0.644     0.567     0.603       557
+            B-ORG       0.795     0.801     0.798      1400
+            I-ORG       0.831     0.773     0.801      1104
+            B-PER       0.812     0.876     0.843       735
+            I-PER       0.873     0.931     0.901       634
 
-          avg/total      0.779     0.764     0.770      6178
+            avg/total   0.779     0.764     0.770      6178
         """
         # 打印表头
         header_format = '{:>9s}  {:>9} {:>9} {:>9} {:>9}'
@@ -96,7 +117,12 @@ class Metrics(object):
         ))
 
     def count_correct_tags(self):
-        """计算每种标签预测正确的个数(对应精确率、召回率计算公式上的tp)，用于后面精确率以及召回率的计算"""
+        """计算每种标签预测正确的个数(对应精确率、召回率计算公式上的tp)，用于后面精确率以及召回率的计算
+        Returns
+        -------
+        dict
+            每个标签预测正确的个数
+        """
         correct_dict = {}
         for gold_tag, predict_tag in zip(self.golden_tags, self.predict_tags):
             if gold_tag == predict_tag:
@@ -108,6 +134,13 @@ class Metrics(object):
         return correct_dict
 
     def _cal_weighted_average(self):
+        """计算每个标签各个指标的均值
+
+        Returns
+        -------
+        dict
+            各个标签指标的均值
+        """
 
         weighted_average = {}
         total = len(self.golden_tags)
@@ -128,6 +161,8 @@ class Metrics(object):
         return weighted_average
 
     def _remove_Otags(self):
+        """删除 O 标签
+        """
 
         length = len(self.golden_tags)
         O_tag_indices = [i for i in range(length)
@@ -145,7 +180,7 @@ class Metrics(object):
         ))
 
     def report_confusion_matrix(self):
-        """计算混淆矩阵"""
+        """计算混淆矩阵, 并输出"""
 
         print("\nConfusion Matrix:")
         tag_list = list(self.tagset)

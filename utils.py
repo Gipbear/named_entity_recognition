@@ -22,14 +22,29 @@ def load_model(file_name):
     return model
 
 
-# LSTM模型训练的时候需要在word2id和tag2id加入PAD和UNK
-# 如果是加了CRF的lstm还要加入<start>和<end> (解码的时候需要用到)
 def extend_maps(word2id, tag2id, for_crf=True):
+    """LSTM 模型训练的时候需要在 word2id 和 tag2id 加入 PAD 和 UNK
+    如果是加了 CRF 的 lstm 还要加入 <start> 和 <end> token (解码的时候需要用到)
+
+    Parameters
+    ----------
+    word2id : dict
+        单字 --> id
+    tag2id : dict
+        标签 --> id
+    for_crf : bool, optional
+        模型中是否有 CRF, by default True
+
+    Returns
+    -------
+    (dict, dict)
+        返回增加相应映射 id 的元素
+    """
     word2id['<unk>'] = len(word2id)
     word2id['<pad>'] = len(word2id)
     tag2id['<unk>'] = len(tag2id)
     tag2id['<pad>'] = len(tag2id)
-    # 如果是加了CRF的bilstm  那么还要加入<start> 和 <end>token
+
     if for_crf:
         word2id['<start>'] = len(word2id)
         word2id['<end>'] = len(word2id)

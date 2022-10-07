@@ -12,13 +12,18 @@ from .bilstm import BiLSTM
 
 class BILSTM_Model(object):
     def __init__(self, vocab_size, out_size, crf=True):
-        """功能：对LSTM的模型进行训练与测试
-           参数:
-            vocab_size:词典大小
-            out_size:标注种类
-            crf选择是否添加CRF层"""
-        self.device = torch.device(
-            "cuda" if torch.cuda.is_available() else "cpu")
+        """对 LSTM 的模型进行训练与测试
+
+        Parameters
+        ----------
+        vocab_size : int
+            词典大小
+        out_size : int
+            标注种类
+        crf : bool, optional
+            crf选择是否添加CRF层, by default True
+        """
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         # 加载模型参数
         self.emb_size = LSTMConfig.emb_size
@@ -27,12 +32,10 @@ class BILSTM_Model(object):
         self.crf = crf
         # 根据是否添加crf初始化不同的模型 选择不一样的损失计算函数
         if not crf:
-            self.model = BiLSTM(vocab_size, self.emb_size,
-                                self.hidden_size, out_size).to(self.device)
+            self.model = BiLSTM(vocab_size, self.emb_size, self.hidden_size, out_size).to(self.device)
             self.cal_loss_func = cal_loss
         else:
-            self.model = BiLSTM_CRF(vocab_size, self.emb_size,
-                                    self.hidden_size, out_size).to(self.device)
+            self.model = BiLSTM_CRF(vocab_size, self.emb_size, self.hidden_size, out_size).to(self.device)
             self.cal_loss_func = cal_lstm_crf_loss
 
         # 加载训练参数：
@@ -54,8 +57,7 @@ class BILSTM_Model(object):
               word2id, tag2id):
         # 对数据集按照长度进行排序
         word_lists, tag_lists, _ = sort_by_lengths(word_lists, tag_lists)
-        dev_word_lists, dev_tag_lists, _ = sort_by_lengths(
-            dev_word_lists, dev_tag_lists)
+        dev_word_lists, dev_tag_lists, _ = sort_by_lengths(dev_word_lists, dev_tag_lists)
 
         B = self.batch_size
         for e in range(1, self.epoches+1):
@@ -65,8 +67,7 @@ class BILSTM_Model(object):
                 batch_sents = word_lists[ind:ind+B]
                 batch_tags = tag_lists[ind:ind+B]
 
-                losses += self.train_step(batch_sents,
-                                          batch_tags, word2id, tag2id)
+                losses += self.train_step(batch_sents, batch_tags, word2id, tag2id)
 
                 if self.step % TrainingConfig.print_step == 0:
                     total_step = (len(word_lists) // B + 1)
@@ -83,6 +84,24 @@ class BILSTM_Model(object):
             print("Epoch {}, Val Loss:{:.4f}".format(e, val_loss))
 
     def train_step(self, batch_sents, batch_tags, word2id, tag2id):
+        """训练一步
+
+        Parameters
+        ----------
+        batch_sents : list of list
+            一个 batch 语句列表
+        batch_tags : list of list
+            一个 bacth 的标签列表
+        word2id : dict
+            单词 --> id
+        tag2id : dict
+            标签 --> id
+
+        Returns
+        -------
+        int
+            训练一轮后的损失值
+        """
         self.model.train()
         self.step += 1
         # 准备数据
@@ -265,7 +284,7 @@ class BiLSTM_CRF(nn.Module):
             tags_t = tags_t.squeeze(1)
             tagids.append(tags_t.tolist())
 
-        # tagids:[L-1]（L-1是因为扣去了end_token),大小的liebiao
+        # tagids:[L-1]（L-1是因为扣去了end_token)大小的列表
         # 其中列表内的元素是该batch在该时刻的标记
         # 下面修正其顺序，并将维度转换为 [B, L]
         tagids = list(zip_longest(*reversed(tagids), fillvalue=pad))
